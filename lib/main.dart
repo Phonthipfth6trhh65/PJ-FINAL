@@ -6,9 +6,20 @@ import 'pages/user_type_selection_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  // Initialize Firebase with error handling
+  try {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+  } catch (e) {
+    // If Firebase is already initialized, ignore the error
+    if (!e.toString().contains('duplicate-app')) {
+      print('Firebase initialization error: $e');
+      rethrow;
+    }
+  }
 
   runApp(const MyApp());
 }
@@ -21,9 +32,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'FitAI',
-      theme: ThemeData(
-        useMaterial3: true,
-      ),
+      theme: ThemeData(useMaterial3: true),
       home: const UserTypeSelectionPage(),
     );
   }

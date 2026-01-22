@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>สรุปผลการออกกำลังกาย</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Page-specific overrides for readability */
+    body { background: linear-gradient(180deg,#f6f9ff,#eef3ff); font-family: 'Sarabun', Arial, sans-serif; color:#16202a; }
+    .container-inner{ max-width:980px;margin:20px auto;padding:18px; }
+    .modal-card{ background: #ffffffcc; border-radius:14px; padding:22px; box-shadow:0 10px 30px rgba(2,6,23,0.12); border:1px solid rgba(2,6,23,0.04); }
+    .modal-header .title{ font-size:24px; font-weight:800; color:#0b2540; }
+    .modal-header .subtitle{ font-size:14px; color:#6b7a86; margin-top:4px; }
+    .modal-header { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
+    .summary-grid { display:grid; grid-template-columns: 1fr 1fr; gap:18px; margin-top:14px; }
+    .summary-item { background:transparent; border:none; padding:12px 8px; text-align:left; }
+    .summary-item .label { font-size:13px; color:#5a6a75; font-weight:600; }
+    .summary-item .value { font-size:28px; font-weight:900; color:#0b2540; margin-top:6px; }
+    #summary-duration, #summary-calories { font-weight:800; color:#0b2540; }
+    .actions-row { display:flex; gap:12px; justify-content:flex-end; margin-top:18px; }
+    .action-button { background: linear-gradient(90deg,#4ECDC4,#667eea); color:white; border:none; padding:10px 16px; border-radius:999px; box-shadow:0 6px 18px rgba(102,126,234,0.18); cursor:pointer; }
+    #backButton { margin:12px 0 6px 12px; background:#fff; color:#0b2540; border:1px solid rgba(11,37,64,0.06); }
+    @media (max-width:640px){ .summary-grid{ grid-template-columns:1fr; } .summary-item .value{ font-size:24px } }
+  </style>
+</head>
+<body>
+  <div class="container-inner">
+    <button id="backButton" class="action-button">← ย้อนกลับ</button>
+
+    <div id="summaryRoot">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div>
+            <div class="title">สรุปผลการออกกำลังกาย</div>
+            <div class="subtitle">ท่ายกดัมเบล (ยืน)</div>
+          </div>
+          <div style="font-size:13px;color:#556879;">วันที่: <span id="summary-date">-</span></div>
+        </div>
+
+        <div class="summary-grid">
+          <div class="summary-item">
+            <div class="label">ข้างซ้าย</div>
+            <div id="summary-left" class="value">0</div>
+          </div>
+          <div class="summary-item">
+            <div class="label">ข้างขวา</div>
+            <div id="summary-right" class="value">0</div>
+          </div>
+          <div class="summary-item">
+            <div class="label">จำนวนรอบ</div>
+            <div id="summary-rounds" class="value">0</div>
+          </div>
+          <div class="summary-item">
+            <div class="label">รวมครั้ง</div>
+            <div id="summary-total" class="value">0</div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:12px; align-items:center; justify-content:space-between; margin-top:18px;">
+          <div style="font-size:15px; color:#34495e;">ระยะเวลา: <span id="summary-duration">0:00</span></div>
+          <div style="font-size:15px; color:#34495e;">แคลอรี่โดยประมาณ: <span id="summary-calories">0</span> kcal</div>
+        </div>
+
+        <div class="actions-row">
+          <button id="downloadCsv" class="action-button">ดาวน์โหลด CSV</button>
+          <button id="clearSummary" class="action-button">ล้างสรุป</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+  <script>
+    function formatDuration(sec) {
+      const m = Math.floor(sec/60);
+      const s = sec % 60;
+      return `${m}:${s.toString().padStart(2,'0')}`;
+    }
+
+    const raw = localStorage.getItem('lastSummary');
+    let summary = null;
+    if (raw) {
+      try { summary = JSON.parse(raw); } catch(e) { console.warn(e); }
+    }
+
+    if (!summary) {
+      // no summary found
+      document.getElementById('summary-left').textContent = '-';
+      document.getElementById('summary-right').textContent = '-';
+      document.getElementById('summary-rounds').textContent = '-';
+      document.getElementById('summary-total').textContent = '-';
+      document.getElementById('summary-duration').textContent = '-';
+      document.getElementById('summary-calories').textContent = '-';
+      document.getElementById('summary-date').textContent = '-';
+    } else {
+      document.getElementById('summary-left').textContent = summary.left;
+      document.getElementById('summary-right').textContent = summary.right;
+      document.getElementById('summary-rounds').textContent = summary.rounds;
+      document.getElementById('summary-total').textContent = summary.total;
+      document.getElementById('summary-duration').textContent = formatDuration(summary.durationSec || 0);
+      document.getElementById('summary-calories').textContent = summary.calories || 0;
+      document.getElementById('summary-date').textContent = summary.date || '-';
+    }
+
+    document.getElementById('backButton').addEventListener('click', () => {
+      window.location.href = 'index.html';
+    });
+
+    document.getElementById('downloadCsv').addEventListener('click', () => {
+      if (!summary) return alert('ไม่พบข้อมูลสรุปผล');
+      const rows = [
+        ['date','left','right','rounds','total','duration_seconds','calories'],
+        [summary.date, summary.left, summary.right, summary.rounds, summary.total, summary.durationSec, summary.calories]
+      ];
+      const csv = rows.map(r => r.join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `summary_${new Date().toISOString()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById('clearSummary').addEventListener('click', () => {
+      localStorage.removeItem('lastSummary');
+      alert('ล้างสรุปเรียบร้อยแล้ว');
+      window.location.href = 'index.html';
+    });
+  </script>
+</body>
+</html>

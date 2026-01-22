@@ -18,6 +18,7 @@
   --shadow-heavy: 0 15px 35px rgba(0, 0, 0, 0.2);
   --border-radius: 16px;
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
 }
 
 * {
@@ -124,6 +125,51 @@ html {
   display: flex;
 }
 
+/* Floating Buttons - ปุ่มซ้ายและขวา */
+.floating-button {
+  position: fixed;
+  top: 120px;
+  /* ชิดด้านบน ติดกับขอบล่างของ header + กล้อง */
+  padding: 1rem 1.5rem;
+  border: none;
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: center;
+  box-shadow: var(--shadow-heavy);
+  z-index: 2000;
+  color: white;
+  backdrop-filter: blur(10px);
+}
+
+.left-button {
+  left: 20px;
+  background: var(--gradient-secondary);
+}
+
+.right-button {
+  right: 20px;
+  background: var(--gradient-primary);
+}
+
+.floating-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.floating-button:active {
+  transform: scale(0.98);
+}
+
+.floating-button i {
+  font-size: 1.2rem;
+}
+
 .action-button {
   padding: 0.6rem 1rem;
   border: none;
@@ -143,20 +189,12 @@ html {
   color: white;
 }
 
-#webcamButton {
-  background: var(--gradient-secondary);
-}
-
 #resetButton {
   background: linear-gradient(135deg, var(--danger-color), #FF7043);
 }
 
 #testCountButton {
   background: linear-gradient(135deg, var(--warning-color), #FFB74D);
-}
-
-#fullscreenButton {
-  background: var(--gradient-primary);
 }
 
 #toggleInstruction {
@@ -178,7 +216,10 @@ html {
 }
 
 @keyframes ripple-animation {
-  to { transform: scale(4); opacity: 0; }
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
 }
 
 /* Webcam container */
@@ -193,6 +234,46 @@ html {
   margin: 0 auto;
   background: linear-gradient(45deg, #000, #333);
   border: 3px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Controls placed inside the webcam container (centered below the video) */
+.webcam-controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  gap: 0;
+  align-items: stretch;
+  z-index: 2100;
+  pointer-events: auto;
+}
+
+/* When controls live inside the webcam container make them each take half width */
+.webcam-container .floating-button {
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  padding: 0.8rem 0;
+  font-size: 0.95rem;
+  box-shadow: none;
+  width: 50%;
+  justify-content: center;
+  border-radius: 0;
+}
+
+.webcam-controls .left-button {
+  border-bottom-left-radius: var(--border-radius);
+  border-top-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.webcam-controls .right-button {
+  border-bottom-right-radius: var(--border-radius);
+  border-top-right-radius: 0;
+  border-bottom-left-radius: 0;
 }
 
 /* Fullscreen mode styles */
@@ -250,7 +331,9 @@ html {
   object-fit: contain;
 }
 
-#webcam, #output_canvas, .canvas-output {
+#webcam,
+#output_canvas,
+.canvas-output {
   position: absolute;
   top: 0;
   left: 0;
@@ -324,8 +407,13 @@ html {
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
-.left-counter { color: #FF6B6B; }
-.right-counter { color: #4ECDC4; }
+.left-counter {
+  color: #FF6B6B;
+}
+
+.right-counter {
+  color: #4ECDC4;
+}
 
 .counter-label {
   font-size: 12px;
@@ -459,9 +547,12 @@ html {
 }
 
 @keyframes pulse-glow {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5), 0 0 20px rgba(255, 167, 38, 0.3);
   }
+
   50% {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5), 0 0 30px rgba(255, 167, 38, 0.6);
   }
@@ -725,9 +816,17 @@ html {
 }
 
 @keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 .glow {
@@ -736,10 +835,35 @@ html {
 
 /* Responsive Design */
 @media (max-width: 768px) {
+
+  /* ปรับปุ่ม floating สำหรับมือถือ */
+  .floating-button {
+    top: 100px;
+    /* ชิดด้านบนบนมือถือ */
+    padding: 0.8rem 1.2rem;
+    font-size: 0.9rem;
+  }
+
+  .left-button {
+    left: 10px;
+  }
+
+  .right-button {
+    right: 10px;
+  }
+
+  .floating-button:hover {
+    transform: scale(1.05);
+  }
+
+  .floating-button:active {
+    transform: scale(0.98);
+  }
+
   .control-panel {
     top: auto;
     bottom: 20px;
-    right: 20px;
+    right: 10px;
     flex-direction: column;
     width: auto;
   }
@@ -759,15 +883,15 @@ html {
   .counter-number {
     font-size: 28px;
   }
-  
+
   .counter-title {
     font-size: 12px;
   }
-  
+
   .round-info {
     font-size: 12px;
   }
-  
+
   .round-number {
     font-size: 18px;
   }
@@ -834,19 +958,19 @@ html {
   .counter-number {
     font-size: 24px;
   }
-  
+
   .counter-title {
     font-size: 11px;
   }
-  
+
   .counter-label {
     font-size: 10px;
   }
-  
+
   .round-info {
     font-size: 11px;
   }
-  
+
   .round-number {
     font-size: 16px;
   }
@@ -872,33 +996,34 @@ html {
   .status-subtext {
     font-size: 10px;
   }
-/* ✅ Fitness stats เวอร์ชันที่อยู่บน overlay กล้อง */
-.fitness-stats.overlay-version {
-  background: rgba(0, 0, 0, 0.75);
-  color: white;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  padding: 1rem;
-  max-width: 250px;
-  font-size: 0.85rem;
-}
 
-.fitness-stats.overlay-version .stats-header {
-  color: #4ECDC4;
-  font-size: 1rem;
-  margin-bottom: 0.5rem;
-  text-align: center;
-}
+  /* ✅ Fitness stats เวอร์ชันที่อยู่บน overlay กล้อง */
+  .fitness-stats.overlay-version {
+    background: rgba(0, 0, 0, 0.75);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 1rem;
+    max-width: 250px;
+    font-size: 0.85rem;
+  }
 
-.fitness-stats.overlay-version .stat-number {
-  color: #FFD700;
-  font-size: 1.4rem;
-}
+  .fitness-stats.overlay-version .stats-header {
+    color: #4ECDC4;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+    text-align: center;
+  }
 
-.fitness-stats.overlay-version .stat-text {
-  color: #EEE;
-  font-size: 0.8rem;
-}
+  .fitness-stats.overlay-version .stat-number {
+    color: #FFD700;
+    font-size: 1.4rem;
+  }
+
+  .fitness-stats.overlay-version .stat-text {
+    color: #EEE;
+    font-size: 0.8rem;
+  }
 
 
 
@@ -918,7 +1043,7 @@ html {
 }
 
 /* ข้อความสรุปด้านล่าง */
-.exercise-content > .counter-section,
+.exercise-content>.counter-section,
 .exercise-content .counter-section,
 .exercise-content .fitness-stats {
   display: none !important;

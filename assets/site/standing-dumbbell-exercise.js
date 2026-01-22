@@ -604,13 +604,48 @@ function processArmMovement(side, angle, angleInfo, isPostureCorrect, now, timeS
         
         // นับเสร็จ 1 ครั้ง
         if (isLeft) {
-          globals.leftCounter++;
+          // use provided setter so globals and window stay in sync
+          if (typeof globals.setLeftCounter === 'function') {
+            globals.setLeftCounter((globals.leftCounter || 0) + 1);
+          } else {
+            globals.leftCounter = (globals.leftCounter || 0) + 1;
+            window.leftCounter = globals.leftCounter;
+          }
           globals.isLeftExtended = false;
           leftArmState = 'start';
         } else {
-          globals.rightCounter++;
+          if (typeof globals.setRightCounter === 'function') {
+            globals.setRightCounter((globals.rightCounter || 0) + 1);
+          } else {
+            globals.rightCounter = (globals.rightCounter || 0) + 1;
+            window.rightCounter = globals.rightCounter;
+          }
           globals.isRightExtended = false;
           rightArmState = 'start';
+        }
+
+        // Update pair count (a round is one rep per side). We compute the number of completed pairs
+        // as the min of left/right counts and increment globals.roundCounter by the delta
+        try {
+          const leftCnt = globals.leftCounter || 0;
+          const rightCnt = globals.rightCounter || 0;
+          // Count completed pairs. Use floor((left+right)/2) so simultaneous raises
+          // (both counters incremented together) count correctly as one pair.
+          const pairs = Math.floor((leftCnt + rightCnt) / 2);
+          const lastPairs = (window.lastPairCount) || 0;
+          const delta = pairs - lastPairs;
+          if (delta > 0) {
+            const newRound = (globals.roundCounter || 0) + delta;
+            if (typeof globals.setRoundCounter === 'function') {
+              globals.setRoundCounter(newRound);
+            } else {
+              globals.roundCounter = newRound;
+              window.roundCounter = newRound;
+            }
+            window.lastPairCount = pairs;
+          }
+        } catch (e) {
+          console.warn('Error updating pair rounds:', e);
         }
         
         stopHoldTimer(side, true);
@@ -633,6 +668,7 @@ function processArmMovement(side, angle, angleInfo, isPostureCorrect, now, timeS
           });
         }
         
+        // Also check if both sides reached targetReps (to trigger round-complete flow)
         checkRoundCompletion();
       }
     } else {
@@ -658,9 +694,9 @@ function processArmMovement(side, angle, angleInfo, isPostureCorrect, now, timeS
  */
 function checkRoundCompletion() {
   if (globals.leftCounter >= globals.targetReps && globals.rightCounter >= globals.targetReps) {
-    globals.roundCounter++;
-     
-    globals.statusElement.textContent = `ทำครบรอบที่ ${globals.roundCounter} แล้ว! (${globals.leftCounter}/${globals.targetReps} ซ้าย, ${globals.rightCounter}/${globals.targetReps} ขวา)`;
+    // When both sides reach targetReps, trigger completion flow but do not auto-increment
+    // roundCounter here because rounds are counted per-rep already.
+    globals.statusElement.textContent = `ทำครบรอบครบเซ็ต! (${globals.leftCounter}/${globals.targetReps} ซ้าย, ${globals.rightCounter}/${globals.targetReps} ขวา)`;
     globals.statusElement.style.color = "#4CAF50";
      
     EventSystem.roundCompleted(
@@ -682,6 +718,8 @@ function checkRoundCompletion() {
       setTimeout(() => {
         globals.leftCounter = 0;
         globals.rightCounter = 0;
+        // reset pair tracking when counters reset
+        window.lastPairCount = 0;
         
         leftArmState = 'start';
         rightArmState = 'start';
@@ -730,6 +768,8 @@ function resetDetection() {
   lastPostureWarningTime = 0;
   previousLeftArmData = null;
   previousRightArmData = null;
+  // reset pair tracking
+  try { window.lastPairCount = 0; } catch(e) {}
 }
 
 export { 

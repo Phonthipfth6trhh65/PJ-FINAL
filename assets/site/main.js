@@ -24,6 +24,7 @@ const positionDisplayElement = document.getElementById("position-display");
 const statusElement = document.getElementById("status");
 const resetButton = document.getElementById("resetButton");
 const testCountButton = document.getElementById("testCountButton");
+const summaryButton = document.getElementById("summaryButton");
 const exerciseInstruction = document.getElementById("exercise-instruction");
 
 // Initialize variables
@@ -79,6 +80,9 @@ window.calibrated = false;
 window.baseSamples = [];
 window.movementHistory = []; // ประวัติการเคลื่อนไหว
 window.historySize = 10; // เก็บประวัติย้อนหลัง 10 เฟรม
+
+// สำหรับเก็บจำนวนคู่ (pair) ที่นับไว้ล่าสุด เพื่อให้การนับรอบเป็นคู่ (ซ้าย+ขวา)
+window.lastPairCount = 0;
 
 // Variables for voice feedback
 window.voiceFeedbackEnabled = true;
@@ -304,6 +308,7 @@ function calibrateBasePosition() {
   window.leftCounter = 0;
   window.rightCounter = 0;
   window.roundCounter = 0;
+  window.lastPairCount = 0;
   window.isLeftExtended = false;
   window.isRightExtended = false;
   window.isLeftHolding = false;
@@ -363,6 +368,38 @@ const createPoseLandmarker = async () => {
 
 // Start initialization
 createPoseLandmarker();
+
+// Summary button handler: save summary to localStorage and open `summary.html`
+if (summaryButton) {
+  summaryButton.addEventListener('click', () => {
+    const left = (typeof globals !== 'undefined' && globals.leftCounter != null) ? globals.leftCounter : (window.leftCounter || 0);
+    const right = (typeof globals !== 'undefined' && globals.rightCounter != null) ? globals.rightCounter : (window.rightCounter || 0);
+    const rounds = (typeof globals !== 'undefined' && globals.roundCounter != null) ? globals.roundCounter : (window.roundCounter || 0);
+    const total = left + right;
+    const durationSec = window.sessionStartTime ? Math.floor((Date.now() - window.sessionStartTime)/1000) : 0;
+    const calories = Math.floor(durationSec/60*4);
+    const date = new Date().toLocaleString();
+
+    const summary = {
+      date,
+      left,
+      right,
+      rounds,
+      total,
+      durationSec,
+      calories
+    };
+
+    try {
+      localStorage.setItem('lastSummary', JSON.stringify(summary));
+    } catch (e) {
+      console.warn('ไม่สามารถบันทึกสรุปผลลง localStorage:', e);
+    }
+
+    // Navigate to summary page
+    window.location.href = 'summary.html';
+  });
+}
 
 // เพิ่มปุ่มทดสอบนับ
 testCountButton.addEventListener("click", () => {
