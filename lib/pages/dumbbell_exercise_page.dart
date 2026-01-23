@@ -1,6 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 class DumbbellExercisePage extends StatefulWidget {
   const DumbbellExercisePage({super.key});
@@ -10,36 +11,72 @@ class DumbbellExercisePage extends StatefulWidget {
 }
 
 class _DumbbellExercisePageState extends State<DumbbellExercisePage> {
-  late InAppLocalhostServer _localhostServer;
-  bool _permissionGranted = false;
+  late InAppLocalhostServer _server;
 
   @override
   void initState() {
     super.initState();
-    _requestCameraPermission();
-
-    // ✅ เปิด localhost server
-    _localhostServer = InAppLocalhostServer(
-      documentRoot: 'assets/site',
-      port: 8080,
-    );
-
-    _localhostServer.start();
+    // Serving assets/site on port 8080
+    _server = InAppLocalhostServer(documentRoot: 'assets/site', port: 8080);
+    _server.start();
   }
 
-  // ✅ ขอ permission กล้อง
-  Future<void> _requestCameraPermission() async {
-    final status = await Permission.camera.request();
-    setState(() {
-      _permissionGranted = status.isGranted;
-    });
+  @override
+  void dispose() {
+    _server.close();
+    super.dispose();
+  }
 
-    if (!status.isGranted) {
+  Future<void> _saveToFirebase(Map<String, dynamic> data) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('ไม่พบข้อมูลผู้ใช้ กรุณาล็อกอินใหม่')),
+      );
+      return;
+    }
+
+    try {
+      // Data structure to save
+      // 1. ชื่อผู้ใช้ (User Name) - Normally stored in user profile, but we can just rely on uid.
+      // 2. วันที่ (Date) - from data
+      // 3. เวลา (Time) - from data
+      // 4. ข้างซ้าย (Left)
+      // 5. ข้างขวา (Right)
+      // 6. จำนวนรอบ (Rounds)
+      // 7. รวมครั้ง (Total)
+      // 8. ระยะเวลา (Duration)
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('exercise_history')
+          .add({
+            'exercise': 'dumbbell_standing', // ระบุประเภทท่า
+            'date': data['date'],
+            'left': data['left'],
+            'right': data['right'],
+            'rounds': data['rounds'],
+            'total': data['total'],
+            'duration_seconds': data['durationSec'],
+            'timestamp': FieldValue.serverTimestamp(),
+          });
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('กรุณาอนุญาตให้เข้าถึงกล้องเพื่อใช้งานฟีเจอร์นี้'),
-            duration: Duration(seconds: 3),
+            content: Text('บันทึกข้อมูลเรียบร้อยแล้ว'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error saving to Firebase: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('เกิดข้อผิดพลาดในการบันทึก: $e'),
+            backgroundColor: Colors.red,
           ),
         );
       }
@@ -47,63 +84,47 @@ class _DumbbellExercisePageState extends State<DumbbellExercisePage> {
   }
 
   @override
-  void dispose() {
-    _localhostServer.close();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('ท่ายกดัมเบลแบบยืน')),
-      body: !_permissionGranted
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('กำลังขอสิทธิ์เข้าถึงกล้อง...'),
-                ],
-              ),
-            )
-          : InAppWebView(
-              // ✅ โหลดผ่าน http://localhost (iOS อนุญาตกล้อง)
-              initialUrlRequest: URLRequest(
-                url: WebUri('http://localhost:8080/index.html'),
-              ),
-
-              initialSettings: InAppWebViewSettings(
-                javaScriptEnabled: true,
-                allowsInlineMediaPlayback: true,
-                mediaPlaybackRequiresUserGesture: false,
-              ),
-
-              // ✅ อนุญาต camera ให้ JS
-              onPermissionRequest: (controller, request) async {
-                return PermissionResponse(
-                  resources: request.resources,
-                  action: PermissionResponseAction.GRANT,
-                );
-              },
-
-              // ✅ สำหรับ Android - จัดการ permission request
-              androidOnPermissionRequest:
-                  (controller, origin, resources) async {
-                    return PermissionRequestResponse(
-                      resources: resources,
-                      action: PermissionRequestResponseAction.GRANT,
-                    );
-                  },
-
-              onConsoleMessage: (controller, message) {
-                debugPrint('WEB: ${message.message}');
-              },
-
-              onLoadError: (controller, url, code, message) {
-                debugPrint('Error loading $url: $message');
-              },
-            ),
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        title: const Text('ท่ายกดัมเบล'),
+        backgroundColor: Colors.black,
+        elevation: 0,
+      ),
+      body: InAppWebView(
+        initialUrlRequest: URLRequest(
+          url: WebUri('http://localhost:8080/index.html'),
+        ),
+        initialSettings: InAppWebViewSettings(
+          javaScriptEnabled: true,
+          allowsInlineMediaPlayback: true,
+          mediaPlaybackRequiresUserGesture: false,
+        ),
+        onWebViewCreated: (controller) {
+          controller.addJavaScriptHandler(
+            handlerName: 'saveExerciseData',
+            callback: (args) {
+              // args[0] คือข้อมูลที่ส่งมาจาก JS
+              if (args.isNotEmpty) {
+                final data = args[0] as Map<String, dynamic>;
+                _saveToFirebase(data);
+                return 'Saved';
+              }
+              return 'No Data';
+            },
+          );
+        },
+        onPermissionRequest: (controller, request) async {
+          return PermissionResponse(
+            resources: request.resources,
+            action: PermissionResponseAction.GRANT,
+          );
+        },
+        onConsoleMessage: (controller, message) {
+          debugPrint('WEB ▶ ${message.message}');
+        },
+      ),
     );
   }
 }

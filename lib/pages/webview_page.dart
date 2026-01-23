@@ -11,7 +11,6 @@ class WebViewPage extends StatefulWidget {
 }
 
 class _WebViewPageState extends State<WebViewPage> {
-  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -24,14 +23,13 @@ class _WebViewPageState extends State<WebViewPage> {
           allowsInlineMediaPlayback: true,
         ),
         onWebViewCreated: (controller) {
-          
-
           // 🔥 รับค่าจาก JavaScript
           controller.addJavaScriptHandler(
             handlerName: 'onExerciseResult',
             callback: (args) async {
-              final Map<String, dynamic> data =
-                  Map<String, dynamic>.from(args.first);
+              final Map<String, dynamic> data = Map<String, dynamic>.from(
+                args.first,
+              );
 
               await _saveExerciseToFirebase(data);
             },
@@ -41,26 +39,23 @@ class _WebViewPageState extends State<WebViewPage> {
     );
   }
 
-Future<void> _saveExerciseToFirebase(Map<String, dynamic> data) async {
-  final user = FirebaseAuth.instance.currentUser;
-  if (user == null) return;
+  Future<void> _saveExerciseToFirebase(Map<String, dynamic> data) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
 
-  final int left = data['left'] ?? 0;
-  final int right = data['right'] ?? 0;
+    final int left = data['left'] ?? 0;
+    final int right = data['right'] ?? 0;
 
-  await FirebaseFirestore.instance
-      .collection('exercise_records')
-      .add({
-        'userId': user.uid,
-        'exercise': data['exercise'] ?? 'unknown',
-        'left': left,
-        'right': right,
-        'round': data['round'] ?? 0,
-        'total': left + right,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
+    await FirebaseFirestore.instance.collection('exercise_records').add({
+      'userId': user.uid,
+      'exercise': data['exercise'] ?? 'unknown',
+      'left': left,
+      'right': right,
+      'round': data['round'] ?? 0,
+      'total': left + right,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
 
-  debugPrint('✅ Saved exercise for user ${user.uid}');
-}
-
+    debugPrint('✅ Saved exercise for user ${user.uid}');
+  }
 }

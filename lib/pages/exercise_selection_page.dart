@@ -16,7 +16,6 @@ class ExerciseSelectionPage extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-
             // ===== ท่าที่ 1 =====
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -54,9 +53,7 @@ class ExerciseSelectionPage extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const HipExercisePage(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const HipExercisePage()),
                 );
               },
               child: const Text(
